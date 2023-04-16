@@ -96,7 +96,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if(ms >= Tx_Delay)
   {
 		MCU_Temp = (uint16_t)(357.558 - (float)ADC_Buffer[2] * 0.187364);	//get the mcu temperature from dma register
-		
+		  
 		POTENTIOMETERS[0] = ADC_Buffer[0] / 340 + 1;
 		POTENTIOMETERS[1] = ADC_Buffer[1] / 340 + 1;
 		
