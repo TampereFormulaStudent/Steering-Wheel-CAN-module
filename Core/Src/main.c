@@ -49,6 +49,31 @@ TIM_HandleTypeDef htim4;
 
 /* USER CODE BEGIN PV */
 
+CAN_TxHeaderTypeDef TxHeader;
+
+CAN_RxHeaderTypeDef RxHeader;
+CAN_FilterTypeDef sFilterConfig;
+
+uint16_t TXID = 78;
+
+uint32_t ADC_Buffer[3] = {0};
+
+uint16_t MCU_Temp = 0;
+
+uint8_t Tx_Data[8] = {0};
+
+uint8_t BUTTONS[5] = {0};
+uint8_t POTENTIOMETERS[2] = {0};
+uint8_t Status = 1;
+
+uint32_t ms = 0;
+uint16_t Tx_Delay = 100;
+
+uint32_t mailbox;
+
+uint8_t CAN_BUFFER_SIZE = 8;
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -60,11 +85,39 @@ static void MX_CAN_Init(void);
 static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
 
+void CanDataTx(uint16_t);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  if(ms >= Tx_Delay)
+  {
+		MCU_Temp = (uint16_t)(357.558 - (float)ADC_Buffer[2] * 0.187364);	//get the mcu temperature from dma register
+		
+		POTENTIOMETERS[0] = ADC_Buffer[0] / 340 + 1;
+		POTENTIOMETERS[1] = ADC_Buffer[1] / 340 + 1;
+		
+		Tx_Data[0] = BUTTONS[0];
+		Tx_Data[1] = BUTTONS[1];
+		Tx_Data[2] = BUTTONS[2];
+		Tx_Data[3] = BUTTONS[3];
+		Tx_Data[4] = BUTTONS[4];
+		Tx_Data[5] = POTENTIOMETERS[0];
+		Tx_Data[6] = POTENTIOMETERS[1];
+		Tx_Data[7] = (uint8_t)MCU_Temp;
+		CanDataTx(TXID);
+		HAL_CAN_AddTxMessage(&hcan, &TxHeader, Tx_Data, &mailbox);
+		
+    ms = 0;
+  }
+  if(htim->Instance==TIM4)
+	{
+    ms++;
+	}
+}
 /* USER CODE END 0 */
 
 /**
@@ -100,7 +153,9 @@ int main(void)
   MX_CAN_Init();
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
-
+	__HAL_RCC_CAN1_CLK_ENABLE();
+  HAL_TIM_Base_Start_IT(&htim4);
+	HAL_ADC_Start_DMA(&hadc1, ADC_Buffer, 3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -196,7 +251,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_239CYCLES_5;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -241,11 +296,11 @@ static void MX_CAN_Init(void)
 
   /* USER CODE END CAN_Init 1 */
   hcan.Instance = CAN1;
-  hcan.Init.Prescaler = 16;
-  hcan.Init.Mode = CAN_MODE_NORMAL;
+  hcan.Init.Prescaler = 9;
+  hcan.Init.Mode = CAN_MODE_LOOPBACK;
   hcan.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  hcan.Init.TimeSeg1 = CAN_BS1_1TQ;
-  hcan.Init.TimeSeg2 = CAN_BS2_1TQ;
+  hcan.Init.TimeSeg1 = CAN_BS1_3TQ;
+  hcan.Init.TimeSeg2 = CAN_BS2_4TQ;
   hcan.Init.TimeTriggeredMode = DISABLE;
   hcan.Init.AutoBusOff = DISABLE;
   hcan.Init.AutoWakeUp = DISABLE;
@@ -257,7 +312,34 @@ static void MX_CAN_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN CAN_Init 2 */
+  /*##-2- Configure the CAN Filter ###########################################*/
+	sFilterConfig.FilterBank = 0;
+	sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+	sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+	sFilterConfig.FilterIdHigh = 0xFFFF;
+	sFilterConfig.FilterIdLow = 0x0000;
+	sFilterConfig.FilterMaskIdHigh = 0x0000;
+	sFilterConfig.FilterMaskIdLow = 0x0000;
+	sFilterConfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+	sFilterConfig.FilterActivation = ENABLE;
+	sFilterConfig.SlaveStartFilterBank = 0;
 
+	if (HAL_CAN_ConfigFilter(&hcan, &sFilterConfig) != HAL_OK)
+	{
+	/* Filter configuration Error */
+	Error_Handler();
+	}
+
+	/*##-3- Start the CAN peripheral ###########################################*/
+	if (HAL_CAN_Start(&hcan) != HAL_OK)
+	{
+	/* Start Error */
+	Error_Handler();
+	}
+  if (HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY) != HAL_OK){
+  /* Notification Error */
+  Error_Handler();
+  }
   /* USER CODE END CAN_Init 2 */
 
 }
@@ -362,6 +444,15 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void CanDataTx(uint16_t STDID)
+{
+	TxHeader.StdId = STDID;
+	TxHeader.IDE = CAN_ID_STD;
+	TxHeader.RTR = CAN_RTR_DATA;
+	TxHeader.DLC = CAN_BUFFER_SIZE;
+	TxHeader.TransmitGlobalTime = DISABLE;
+}
 
 /* USER CODE END 4 */
 

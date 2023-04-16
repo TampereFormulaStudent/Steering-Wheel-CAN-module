@@ -41,7 +41,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-
+extern uint8_t BUTTONS[5];
+extern uint8_t POTENTIOMETERS[2];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -58,7 +59,9 @@
 extern DMA_HandleTypeDef hdma_adc1;
 extern TIM_HandleTypeDef htim4;
 /* USER CODE BEGIN EV */
-
+extern CAN_HandleTypeDef hcan;
+extern CAN_TxHeaderTypeDef TxHeader;
+extern uint32_t mailbox;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -205,7 +208,12 @@ void SysTick_Handler(void)
 void EXTI3_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI3_IRQn 0 */
-
+	if(HAL_GPIO_ReadPin(GPIOA, B1_Pin) == RESET){
+    BUTTONS[0] = !HAL_GPIO_ReadPin(GPIOA, B1_Pin);
+  }  
+  else if(HAL_GPIO_ReadPin(GPIOA, B1_Pin) == SET){
+		BUTTONS[0] = !HAL_GPIO_ReadPin(GPIOA, B1_Pin);
+	}
   /* USER CODE END EXTI3_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(B1_Pin);
   /* USER CODE BEGIN EXTI3_IRQn 1 */
@@ -219,7 +227,12 @@ void EXTI3_IRQHandler(void)
 void EXTI4_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI4_IRQn 0 */
-
+	if(HAL_GPIO_ReadPin(GPIOA, B2_Pin) == RESET){
+    BUTTONS[1] = !HAL_GPIO_ReadPin(GPIOA, B2_Pin);
+  }  
+  else if(HAL_GPIO_ReadPin(GPIOA, B2_Pin) == SET){
+		BUTTONS[1] = !HAL_GPIO_ReadPin(GPIOA, B2_Pin);
+	}
   /* USER CODE END EXTI4_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(B2_Pin);
   /* USER CODE BEGIN EXTI4_IRQn 1 */
@@ -247,7 +260,16 @@ void DMA1_Channel1_IRQHandler(void)
 void EXTI9_5_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI9_5_IRQn 0 */
-
+	if(HAL_GPIO_ReadPin(GPIOA, B3_Pin) == RESET || HAL_GPIO_ReadPin(GPIOA, B4_Pin) == RESET || HAL_GPIO_ReadPin(GPIOA, B5_Pin) == RESET){
+    BUTTONS[2] = !HAL_GPIO_ReadPin(GPIOA, B3_Pin);
+    BUTTONS[3] = !HAL_GPIO_ReadPin(GPIOA, B4_Pin);
+		BUTTONS[4] = !HAL_GPIO_ReadPin(GPIOA, B5_Pin);
+  }
+  else if(HAL_GPIO_ReadPin(GPIOA, B3_Pin) == SET || HAL_GPIO_ReadPin(GPIOA, B4_Pin) == SET || HAL_GPIO_ReadPin(GPIOA, B5_Pin) == SET){
+    BUTTONS[2] = !HAL_GPIO_ReadPin(GPIOA, B3_Pin);
+    BUTTONS[3] = !HAL_GPIO_ReadPin(GPIOA, B4_Pin);
+		BUTTONS[4] = !HAL_GPIO_ReadPin(GPIOA, B5_Pin);
+  }
   /* USER CODE END EXTI9_5_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(B3_Pin);
   HAL_GPIO_EXTI_IRQHandler(B4_Pin);
