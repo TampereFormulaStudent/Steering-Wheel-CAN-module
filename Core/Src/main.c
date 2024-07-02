@@ -54,7 +54,7 @@ CAN_TxHeaderTypeDef TxHeader;
 CAN_RxHeaderTypeDef RxHeader;
 CAN_FilterTypeDef sFilterConfig;
 
-uint16_t TXID = 78;
+uint16_t TXID = 100;
 
 uint32_t ADC_Buffer[3] = {0};
 
@@ -67,7 +67,7 @@ uint8_t POTENTIOMETERS[2] = {0};
 uint8_t Status = 1;
 
 uint32_t ms = 0;
-uint16_t Tx_Delay = 100;
+uint16_t Tx_Delay = 10;
 
 uint32_t mailbox;
 
@@ -100,13 +100,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		POTENTIOMETERS[0] = ADC_Buffer[0] / 340 + 1;
 		POTENTIOMETERS[1] = ADC_Buffer[1] / 340 + 1;
 		
-		Tx_Data[0] = BUTTONS[0];
-		Tx_Data[1] = BUTTONS[1];
-		Tx_Data[2] = BUTTONS[2];
-		Tx_Data[3] = BUTTONS[3];
-		Tx_Data[4] = BUTTONS[4];
-		Tx_Data[5] = POTENTIOMETERS[0];
-		Tx_Data[6] = POTENTIOMETERS[1];
+		Tx_Data[0] = POTENTIOMETERS[0];
+		Tx_Data[1] = POTENTIOMETERS[1];
+		Tx_Data[2] = BUTTONS[0];
+		Tx_Data[3] = BUTTONS[1];
+		Tx_Data[4] = BUTTONS[2];
+		Tx_Data[5] = BUTTONS[3];
+		Tx_Data[6] = BUTTONS[4];
 		Tx_Data[7] = (uint8_t)MCU_Temp;
 		CanDataTx(TXID);
 		HAL_CAN_AddTxMessage(&hcan, &TxHeader, Tx_Data, &mailbox);
@@ -143,7 +143,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+	HAL_Delay(1000);
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
