@@ -126,6 +126,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -153,7 +154,6 @@ int main(void)
   MX_CAN_Init();
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
-	__HAL_RCC_CAN1_CLK_ENABLE();
   HAL_TIM_Base_Start_IT(&htim4);
 	HAL_ADC_Start_DMA(&hadc1, ADC_Buffer, 3);
   /* USER CODE END 2 */
@@ -293,18 +293,18 @@ static void MX_CAN_Init(void)
   /* USER CODE END CAN_Init 0 */
 
   /* USER CODE BEGIN CAN_Init 1 */
-
+  __HAL_RCC_CAN1_CLK_ENABLE();
   /* USER CODE END CAN_Init 1 */
   hcan.Instance = CAN1;
   hcan.Init.Prescaler = 9;
-  hcan.Init.Mode = CAN_MODE_LOOPBACK;
+  hcan.Init.Mode = CAN_MODE_NORMAL;
   hcan.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  hcan.Init.TimeSeg1 = CAN_BS1_3TQ;
-  hcan.Init.TimeSeg2 = CAN_BS2_4TQ;
+  hcan.Init.TimeSeg1 = CAN_BS1_4TQ;
+  hcan.Init.TimeSeg2 = CAN_BS2_3TQ;
   hcan.Init.TimeTriggeredMode = DISABLE;
   hcan.Init.AutoBusOff = DISABLE;
   hcan.Init.AutoWakeUp = DISABLE;
-  hcan.Init.AutoRetransmission = DISABLE;
+  hcan.Init.AutoRetransmission = ENABLE;
   hcan.Init.ReceiveFifoLocked = DISABLE;
   hcan.Init.TransmitFifoPriority = DISABLE;
   if (HAL_CAN_Init(&hcan) != HAL_OK)
@@ -313,33 +313,32 @@ static void MX_CAN_Init(void)
   }
   /* USER CODE BEGIN CAN_Init 2 */
   /*##-2- Configure the CAN Filter ###########################################*/
-	sFilterConfig.FilterBank = 0;
-	sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
-	sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-	sFilterConfig.FilterIdHigh = 0xFFFF;
-	sFilterConfig.FilterIdLow = 0x0000;
-	sFilterConfig.FilterMaskIdHigh = 0x0000;
-	sFilterConfig.FilterMaskIdLow = 0x0000;
-	sFilterConfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
-	sFilterConfig.FilterActivation = ENABLE;
-	sFilterConfig.SlaveStartFilterBank = 0;
 
-	if (HAL_CAN_ConfigFilter(&hcan, &sFilterConfig) != HAL_OK)
-	{
+	FilterConfig.FilterBank = 0;
+	FilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+	FilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+	FilterConfig.FilterIdHigh = 0xFFFF;
+	FilterConfig.FilterIdLow = 0x0000;
+	FilterConfig.FilterMaskIdHigh = 0xFFFF;
+	FilterConfig.FilterMaskIdLow = 0x0000;
+	FilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
+	FilterConfig.FilterActivation = ENABLE;
+	FilterConfig.SlaveStartFilterBank = 0;
+
+	if (HAL_CAN_ConfigFilter(&hcan, &FilterConfig) != HAL_OK) {
 	/* Filter configuration Error */
-	Error_Handler();
+		Error_Handler();
 	}
 
-	/*##-3- Start the CAN peripheral ###########################################*/
-	if (HAL_CAN_Start(&hcan) != HAL_OK)
-	{
+	/* Start the CAN peripheral */
+	if (HAL_CAN_Start(&hcan) != HAL_OK) {
 	/* Start Error */
-	Error_Handler();
+		Error_Handler();
 	}
-  if (HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY) != HAL_OK){
-  /* Notification Error */
-  Error_Handler();
-  }
+	if (HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY) != HAL_OK) {
+	 /* Notification Error */
+		Error_Handler();
+	}
   /* USER CODE END CAN_Init 2 */
 
 }
@@ -465,6 +464,7 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
+  HAL_NVIC_SystemReset();
   while (1)
   {
   }
