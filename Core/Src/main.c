@@ -45,6 +45,8 @@ DMA_HandleTypeDef hdma_adc1;
 
 CAN_HandleTypeDef hcan;
 
+IWDG_HandleTypeDef hiwdg;
+
 TIM_HandleTypeDef htim4;
 
 /* USER CODE BEGIN PV */
@@ -52,7 +54,7 @@ TIM_HandleTypeDef htim4;
 CAN_TxHeaderTypeDef TxHeader;
 
 CAN_RxHeaderTypeDef RxHeader;
-CAN_FilterTypeDef sFilterConfig;
+CAN_FilterTypeDef FilterConfig;
 
 uint16_t TXID = 100;
 
@@ -83,6 +85,7 @@ static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_CAN_Init(void);
 static void MX_TIM4_Init(void);
+static void MX_IWDG_Init(void);
 /* USER CODE BEGIN PFP */
 
 void CanDataTx(uint16_t);
@@ -152,8 +155,8 @@ int main(void)
   MX_ADC1_Init();
   MX_CAN_Init();
   MX_TIM4_Init();
+  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
-	__HAL_RCC_CAN1_CLK_ENABLE();
   HAL_TIM_Base_Start_IT(&htim4);
 	HAL_ADC_Start_DMA(&hadc1, ADC_Buffer, 3);
   /* USER CODE END 2 */
@@ -182,10 +185,11 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
@@ -293,7 +297,7 @@ static void MX_CAN_Init(void)
   /* USER CODE END CAN_Init 0 */
 
   /* USER CODE BEGIN CAN_Init 1 */
-
+  __HAL_RCC_CAN1_CLK_ENABLE();
   /* USER CODE END CAN_Init 1 */
   hcan.Instance = CAN1;
   hcan.Init.Prescaler = 9;
@@ -313,34 +317,61 @@ static void MX_CAN_Init(void)
   }
   /* USER CODE BEGIN CAN_Init 2 */
   /*##-2- Configure the CAN Filter ###########################################*/
-	sFilterConfig.FilterBank = 0;
-	sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
-	sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-	sFilterConfig.FilterIdHigh = 0xFFFF;
-	sFilterConfig.FilterIdLow = 0x0000;
-	sFilterConfig.FilterMaskIdHigh = 0x0000;
-	sFilterConfig.FilterMaskIdLow = 0x0000;
-	sFilterConfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
-	sFilterConfig.FilterActivation = ENABLE;
-	sFilterConfig.SlaveStartFilterBank = 0;
 
-	if (HAL_CAN_ConfigFilter(&hcan, &sFilterConfig) != HAL_OK)
-	{
+	FilterConfig.FilterBank = 0;
+	FilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+	FilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+	FilterConfig.FilterIdHigh = 0xFFFF;
+	FilterConfig.FilterIdLow = 0x0000;
+	FilterConfig.FilterMaskIdHigh = 0xFFFF;
+	FilterConfig.FilterMaskIdLow = 0x0000;
+	FilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
+	FilterConfig.FilterActivation = ENABLE;
+	FilterConfig.SlaveStartFilterBank = 0;
+
+	if (HAL_CAN_ConfigFilter(&hcan, &FilterConfig) != HAL_OK) {
 	/* Filter configuration Error */
-	Error_Handler();
+		Error_Handler();
 	}
 
-	/*##-3- Start the CAN peripheral ###########################################*/
-	if (HAL_CAN_Start(&hcan) != HAL_OK)
-	{
+	/* Start the CAN peripheral */
+	if (HAL_CAN_Start(&hcan) != HAL_OK) {
 	/* Start Error */
-	Error_Handler();
+		Error_Handler();
 	}
-  if (HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY) != HAL_OK){
-  /* Notification Error */
-  Error_Handler();
-  }
+	if (HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY) != HAL_OK) {
+	 /* Notification Error */
+		Error_Handler();
+	}
   /* USER CODE END CAN_Init 2 */
+
+}
+
+/**
+  * @brief IWDG Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_IWDG_Init(void)
+{
+
+  /* USER CODE BEGIN IWDG_Init 0 */
+
+  /* USER CODE END IWDG_Init 0 */
+
+  /* USER CODE BEGIN IWDG_Init 1 */
+
+  /* USER CODE END IWDG_Init 1 */
+  hiwdg.Instance = IWDG;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_4;
+  hiwdg.Init.Reload = 499;
+  if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN IWDG_Init 2 */
+
+  /* USER CODE END IWDG_Init 2 */
 
 }
 
@@ -465,6 +496,7 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
+  HAL_NVIC_SystemReset();
   while (1)
   {
   }
