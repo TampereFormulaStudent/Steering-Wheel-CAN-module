@@ -69,7 +69,7 @@ uint8_t POTENTIOMETERS[2] = {0};
 uint8_t Status = 1;
 
 uint32_t ms = 0;
-uint16_t Tx_Delay = 10;
+uint16_t Tx_Delay = 11;
 
 uint32_t mailbox;
 
@@ -98,7 +98,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   if(ms >= Tx_Delay)
   {
-		MCU_Temp = (uint16_t)(357.558 - (float)ADC_Buffer[2] * 0.187364);	//get the mcu temperature from dma register
+	  ms = 0;
+		MCU_Temp = (uint8_t)(357.558 - (float)ADC_Buffer[2] * 0.187364);	//get the mcu temperature from dma register
 		  
 		POTENTIOMETERS[0] = ADC_Buffer[0] / 340 + 1;
 		POTENTIOMETERS[1] = ADC_Buffer[1] / 340 + 1;
@@ -121,9 +122,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			HAL_CAN_AbortTxRequest(&hcan, 1);
 			HAL_CAN_AbortTxRequest(&hcan, 2);
 		}
-			
-		
-    ms = 0;
   }
   if(htim->Instance==TIM4)
 	{
@@ -177,6 +175,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+		HAL_Delay(1);
   }
   /* USER CODE END 3 */
 }
@@ -310,7 +309,7 @@ static void MX_CAN_Init(void)
   /* USER CODE END CAN_Init 1 */
   hcan.Instance = CAN1;
   hcan.Init.Prescaler = 9;
-  hcan.Init.Mode = CAN_MODE_LOOPBACK;
+  hcan.Init.Mode = CAN_MODE_NORMAL;
   hcan.Init.SyncJumpWidth = CAN_SJW_1TQ;
   hcan.Init.TimeSeg1 = CAN_BS1_3TQ;
   hcan.Init.TimeSeg2 = CAN_BS2_4TQ;
