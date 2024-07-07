@@ -17,6 +17,7 @@
 "software\stm32f1xx_hal_flash_ex.o"
 "software\stm32f1xx_hal_exti.o"
 "software\stm32f1xx_hal_can.o"
+"software\stm32f1xx_hal_iwdg.o"
 "software\stm32f1xx_hal_tim.o"
 "software\stm32f1xx_hal_tim_ex.o"
 "software\system_stm32f1xx.o"

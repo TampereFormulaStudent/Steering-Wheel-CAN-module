@@ -112,7 +112,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		Tx_Data[6] = BUTTONS[4];
 		Tx_Data[7] = (uint8_t)MCU_Temp;
 		CanDataTx(TXID);
-		HAL_CAN_AddTxMessage(&hcan, &TxHeader, Tx_Data, &mailbox);
+		if(HAL_CAN_GetTxMailboxesFreeLevel(&hcan) != 0){
+			HAL_CAN_AddTxMessage(&hcan, &TxHeader, Tx_Data, &mailbox);
+			HAL_IWDG_Refresh(&hiwdg);
+		}
+		else{
+			HAL_CAN_AbortTxRequest(&hcan, 0);
+			HAL_CAN_AbortTxRequest(&hcan, 1);
+			HAL_CAN_AbortTxRequest(&hcan, 2);
+		}
+			
 		
     ms = 0;
   }
